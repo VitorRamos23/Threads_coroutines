@@ -1,10 +1,10 @@
-#🍽️ Análise Comparativa do Problema dos Filósofos Jantando: Corrotinas vs. Threads
+**🍽️ Análise Comparativa do Problema dos Filósofos Jantando: Corrotinas vs. Threads**
 
 Este projeto em Python explora o Problema dos Filósofos Jantando (Dining Philosophers Problem), um problema clássico de concorrência e sincronização em ciência da computação, utilizando e comparando duas abordagens de concorrência em Python: Threads (programação preemptiva) e Corrotinas com asyncio (programação cooperativa).
 
 O objetivo principal é demonstrar a ocorrência de deadlock (impasse) e, em seguida, implementar soluções robustas para preveni-lo em ambos os modelos de concorrência.
 
-##💡 O Problema dos Filósofos Jantando
+**💡 O Problema dos Filósofos Jantando**
 
 O problema, proposto por Edsger Dijkstra, ilustra os desafios de evitar deadlock e starvation em um sistema com recursos compartilhados.
 
@@ -24,7 +24,7 @@ O deadlock é possível quando as quatro condições de Coffman são atendidas:
 
 4.Espera Circular: Existe uma cadeia circular de espera por recursos.
 
-###🛠️ Implementações e Soluções
+**🛠️ Implementações e Soluções**
 
 O projeto contém quatro simulações principais, duas para cada modelo de concorrência:
 
@@ -43,7 +43,7 @@ As versões corrigidas utilizam uma combinação de duas estratégias clássicas
 
 2.Ordem Hierárquica Assimétrica: Filósofos com ID par pegam o garfo esquerdo e depois o direito, enquanto filósofos com ID ímpar pegam o garfo direito e depois o esquerdo. Essa assimetria impede que todos entrem em um estado de espera mútua.
 
-####📊 Comparação: Corrotinas vs. Threads
+**📊 Comparação: Corrotinas vs. Threads**
 
 A principal diferença reside no modelo de concorrência e como o controle da execução é gerenciado:
 
@@ -57,7 +57,7 @@ Deadlock                                Ocorre se a lógica de acesso a recursos
 
 Ambas as abordagens são suscetíveis a deadlock se a lógica de acesso a recursos for falha, e ambas requerem as mesmas estratégias de prevenção para garantir a segurança do recurso.
 
-#####🚀 Como Executar
+**🚀 Como Executar**
 
 O projeto requer apenas o Python 3.x.
 
