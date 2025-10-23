@@ -27,14 +27,14 @@ O deadlock é possível quando as quatro condições de Coffman são atendidas:
 **🛠️ Implementações e Soluções**
 
 O projeto contém quatro simulações principais, duas para cada modelo de concorrência:
-
-Arquivo                                                   Modelo de Concorrência                   Cenário                   Mecanismos Utilizados          
+```
+Arquivo                                                  Modelo de Concorrência                    Cenário                   Mecanismos Utilizados          
 
 dining_philosophers_coroutines.py                        Corrotinas (asyncio)                      Deadlock                  asyncio.Lock    
 dining_philosophers_coroutines.py                        Corrotinas (asyncio)                      Corrigido                 asyncio.Semaphore (N-1) e Ordem Hierárquica Assimétrica
 dining_philosophers_threads.py                           Threads (threading)                       Deadlock                  threading.Lock
 dining_philosophers_threads.py                           Threads (threading)                       Corrigido                 threading.Semaphore (N-1) e Ordem Hierárquica Assimétrica 
-
+```
 Estratégias de Prevenção de Deadlock
 
 As versões corrigidas utilizam uma combinação de duas estratégias clássicas para quebrar a condição de Espera Circular:
@@ -46,15 +46,15 @@ As versões corrigidas utilizam uma combinação de duas estratégias clássicas
 **📊 Comparação: Corrotinas vs. Threads**
 
 A principal diferença reside no modelo de concorrência e como o controle da execução é gerenciado:
-
-Característica                                    Corrotinas (asyncio)                                      Threads (threading)
+```
+Característica                          Corrotinas (asyncio)                                               Threads (threading)
 
 Modelo                                  Cooperativo (requer await explícito para ceder)                    Preemptivo (Sistema Operacional decide quando alternar)
 Agendamento                             Gerenciado pelo event loop do Python                               Gerenciado pelo Sistema Operacional
 Overhead                                Leve, baixo custo de troca de contexto                             Mais pesado, maior custo de troca de contexto
 Paralelismo Real                        Não (single-threaded, ideal para I/O-bound)                        Limitado pelo GIL (Global Interpreter Lock) em Python
 Deadlock                                Ocorre se a lógica de acesso a recursos for falha                  Ocorre se a lógica de acesso a recursos for falha
-
+```
 Ambas as abordagens são suscetíveis a deadlock se a lógica de acesso a recursos for falha, e ambas requerem as mesmas estratégias de prevenção para garantir a segurança do recurso.
 
 **🚀 Como Executar**
