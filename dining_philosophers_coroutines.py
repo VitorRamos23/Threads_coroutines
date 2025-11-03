@@ -12,87 +12,115 @@ class Philosopher:
         self.eating_count = 0
 
     async def think(self):
-        print(f"Filosofo {self.id} esta pensando.")
         await asyncio.sleep(random.uniform(0.1, 0.5))
 
     async def eat(self):
-        print(f"Filosofo {self.id} esta comendo ({self.eating_count + 1}).")
         await asyncio.sleep(random.uniform(0.1, 0.5))
         self.eating_count += 1
 
     async def dine_deadlock(self):
         while True:
             await self.think()
-            print(f"Filosofo {self.id} tentando pegar garfo ESQUERDO.")
             async with self.left_fork:
-                print(f"Filosofo {self.id} pegou garfo ESQUERDO. Tentando pegar garfo DIREITO.")
-                await asyncio.sleep(0.01) # Simula um pequeno atraso que pode exacerbar o deadlock
+                await asyncio.sleep(0.01) 
                 async with self.right_fork:
-                    print(f"Filosofo {self.id} pegou garfo DIREITO.")
                     await self.eat()
-                    print(f"Filosofo {self.id} terminou de comer. Soltando garfos.")
             
     async def dine_corrected(self, semaphore):
         while True:
             await self.think()
-            async with semaphore: # Limita o número de filosofos que podem tentar pegar garfos
-                # Implementação da ordem hierárquica (garfo menor primeiro)
-                if self.id % 2 == 0: # Filosofos pares pegam o garfo esquerdo primeiro
-                    print(f"Filosofo {self.id} (par) tentando pegar garfo ESQUERDO.")
+            async with semaphore:
+                if self.id % 2 == 0: 
                     async with self.left_fork:
-                        print(f"Filosofo {self.id} (par) pegou garfo ESQUERDO. Tentando pegar garfo DIREITO.")
                         async with self.right_fork:
-                            print(f"Filosofo {self.id} (par) pegou garfo DIREITO.")
                             await self.eat()
-                            print(f"Filosofo {self.id} (par) terminou de comer. Soltando garfos.")
-                else: # Filosofos impares pegam o garfo direito primeiro
-                    print(f"Filosofo {self.id} (impar) tentando pegar garfo DIREITO.")
+                else: 
                     async with self.right_fork:
-                        print(f"Filosofo {self.id} (impar) pegou garfo DIREITO. Tentando pegar garfo ESQUERDO.")
                         async with self.left_fork:
-                            print(f"Filosofo {self.id} (impar) pegou garfo ESQUERDO.")
                             await self.eat()
-                            print(f"Filosofo {self.id} (impar) terminou de comer. Soltando garfos.")
 
-async def main_deadlock():
+async def run_simulation(strategy, timeout_s):
     forks = [asyncio.Lock() for _ in range(NUM_PHILOSOPHERS)]
-    philosophers = [
-        Philosopher(i, forks[i], forks[(i + 1) % NUM_PHILOSOPHERS])
-        for i in range(NUM_PHILOSOPHERS)
-    ]
+    
+    # Prepara os filósofos
+    if strategy == 'deadlock':
+        philosophers = [
+            Philosopher(i, forks[i], forks[(i + 1) % NUM_PHILOSOPHERS])
+            for i in range(NUM_PHILOSOPHERS)
+        ]
+        tasks = [asyncio.create_task(p.dine_deadlock()) for p in philosophers]
+    else: 
+        semaphore = asyncio.Semaphore(NUM_PHILOSOPHERS - 1)
+        philosophers = [
+            Philosopher(i, forks[i], forks[(i + 1) % NUM_PHILOSOPHERS])
+            for i in range(NUM_PHILOSOPHERS)
+        ]
+        tasks = [asyncio.create_task(p.dine_corrected(semaphore)) for p in philosophers]
 
-    tasks = [asyncio.create_task(p.dine_deadlock()) for p in philosophers]
-    await asyncio.gather(*tasks)
+    start_time = time.time()
+    try:
+        # Roda a simulação pelo tempo limite
+        await asyncio.wait_for(asyncio.gather(*tasks), timeout=timeout_s)
+    except asyncio.TimeoutError:
+        # Timeout esperado
+        pass
+    except Exception as e:
+        print(f"Erro inesperado: {e}")
+    finally:
+        # Cancela todas as tarefas para garantir a parada
+        for task in tasks:
+            task.cancel()
+        
+        # Espera que as tarefas cancelem
+        await asyncio.gather(*tasks, return_exceptions=True)
 
-async def main_corrected():
-    forks = [asyncio.Lock() for _ in range(NUM_PHILOSOPHERS)]
-    # Solução N-1: Permite que no máximo N-1 filosofos tentem pegar garfos ao mesmo tempo
-    # Isso garante que sempre haverá um conjunto de garfos disponível para um filosofo
-    semaphore = asyncio.Semaphore(NUM_PHILOSOPHERS - 1)
+    end_time = time.time()
+    
+    # Coleta as métricas
+    elapsed_time = end_time - start_time
+    eating_counts = [p.eating_count for p in philosophers]
 
-    philosophers = [
-        Philosopher(i, forks[i], forks[(i + 1) % NUM_PHILOSOPHERS])
-        for i in range(NUM_PHILOSOPHERS)
-    ]
+    # Retorna o tempo total e a contagem de refeições de cada filósofo
+    return elapsed_time, eating_counts
 
-    tasks = [asyncio.create_task(p.dine_corrected(semaphore)) for p in philosophers]
-    await asyncio.gather(*tasks)
+def save_to_csv(filename, strategy, elapsed_time, eating_counts):
+    import csv
+    
+    # Se o arquivo não existe, escreve o cabeçalho
+    try:
+        with open(filename, 'r') as f:
+            first_row = next(csv.reader(f))
+            if first_row[0] != 'Estrategia':
+                raise FileNotFoundError
+    except (FileNotFoundError, StopIteration):
+        with open(filename, 'w', newline='') as f:
+            writer = csv.writer(f)
+            header = ['Estrategia', 'Tempo_Total_s'] + [f'Filosofo_{i}_Refeicoes' for i in range(NUM_PHILOSOPHERS)]
+            writer.writerow(header)
+
+    # Escreve a linha de dados
+    with open(filename, 'a', newline='') as f:
+        writer = csv.writer(f)
+        row = [strategy, f'{elapsed_time:.4f}'] + eating_counts
+        writer.writerow(row)
+
+async def main_all(timeout_deadlock=5, timeout_corrected=10):
+    filename = 'results/coroutines_metrics.csv'
+    
+    print(f"\n--- Executando Deadlock (Timeout: {timeout_deadlock}s) ---")
+    elapsed_time, eating_counts = await run_simulation('deadlock', timeout_deadlock)
+    print(f"Tempo: {elapsed_time:.4f}s. Refeições (Total: {sum(eating_counts)}): {eating_counts}")
+    save_to_csv(filename, 'deadlock', elapsed_time, eating_counts)
+
+    print(f"\n--- Executando Corrigida (Timeout: {timeout_corrected}s) ---")
+    elapsed_time, eating_counts = await run_simulation('corrected', timeout_corrected)
+    print(f"Tempo: {elapsed_time:.4f}s. Refeições (Total: {sum(eating_counts)}): {eating_counts}")
+    save_to_csv(filename, 'corrected', elapsed_time, eating_counts)
+
+    print(f"\n--- Fim da Simulação de Corrotinas. Dados salvos em {filename} ---")
 
 if __name__ == "__main__":
-    print("\n--- Executando versão com deadlock (corrotinas) ---")
-    # Para observar o deadlock, pode ser necessário rodar por um tempo ou ajustar os sleeps
-    # asyncio.run(main_deadlock())
-    # Para demonstrar o deadlock, vamos rodar por um tempo limitado e ver se todos comem
-    try:
-        asyncio.run(asyncio.wait_for(main_deadlock(), timeout=5))
-    except asyncio.TimeoutError:
-        print("\nDeadlock provavelmente ocorreu ou a simulação atingiu o tempo limite.")
-    
-    print("\n--- Executando versão corrigida (corrotinas) ---")
-    try:
-        asyncio.run(asyncio.wait_for(main_corrected(), timeout=10))
-    except asyncio.TimeoutError:
-        print("\nSimulação corrigida atingiu o tempo limite.")
-
-    print("\n--- Fim da simulação de corrotinas ---")
-
+    # Garante que o diretório de resultados exista
+    import os
+    os.makedirs('results', exist_ok=True)
+    asyncio.run(main_all())

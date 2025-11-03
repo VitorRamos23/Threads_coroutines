@@ -1,11 +1,13 @@
 import threading
 import time
 import random
+import csv
+import os
 
 NUM_PHILOSOPHERS = 5
 
 class Philosopher(threading.Thread):
-    def __init__(self, id, left_fork, right_fork, strategy=None, semaphore=None):
+    def __init__(self, id, left_fork, right_fork, strategy, semaphore=None):
         super().__init__()
         self.id = id
         self.left_fork = left_fork
@@ -19,92 +21,120 @@ class Philosopher(threading.Thread):
         while self._running:
             self.think()
             if self.strategy == 'deadlock':
-                self.dine_deadlock()
+                # A thread pode ficar BLOQUEADA aqui, impedindo a saída do loop
+                if self._running:
+                     self.dine_deadlock()
             elif self.strategy == 'corrected':
-                self.dine_corrected(self.semaphore)
+                if self._running:
+                    self.dine_corrected(self.semaphore)
 
     def think(self):
-        print(f"Filosofo {self.id} esta pensando.")
         time.sleep(random.uniform(0.1, 0.5))
 
     def eat(self):
-        print(f"Filosofo {self.id} esta comendo ({self.eating_count + 1}).")
         time.sleep(random.uniform(0.1, 0.5))
         self.eating_count += 1
 
     def dine_deadlock(self):
-        print(f"Filosofo {self.id} tentando pegar garfo ESQUERDO.")
+        if not self._running: return # Checagem extra antes de adquirir o primeiro recurso
         self.left_fork.acquire()
-        print(f"Filosofo {self.id} pegou garfo ESQUERDO. Tentando pegar garfo DIREITO.")
-        time.sleep(0.01) # Simula um pequeno atraso que pode exacerbar o deadlock
-        self.right_fork.acquire()
-        print(f"Filosofo {self.id} pegou garfo DIREITO.")
-        self.eat()
-        print(f"Filosofo {self.id} terminou de comer. Soltando garfos.")
-        self.right_fork.release()
-        self.left_fork.release()
+        
+        try:
+            time.sleep(0.01) # Simula um pequeno atraso que pode exacerbar o deadlock
+            
+            if not self._running: return # Checagem extra antes de adquirir o segundo recurso
+            self.right_fork.acquire()
+            
+            try:
+                self.eat()
+            finally:
+                self.right_fork.release()
+        finally:
+            self.left_fork.release()
 
     def dine_corrected(self, semaphore):
+        if not self._running: return 
         with semaphore: 
+            if not self._running: return 
             if self.id % 2 == 0: 
-                print(f"Filosofo {self.id} (par) tentando pegar garfo ESQUERDO.")
-                with self.left_fork: # Usando 'with'
-                    print(f"Filosofo {self.id} (par) pegou garfo ESQUERDO. Tentando pegar garfo DIREITO.")
-                    with self.right_fork: # Usando 'with'
-                        print(f"Filosofo {self.id} (par) pegou garfo DIREITO.")
+                with self.left_fork: 
+                    with self.right_fork:
                         self.eat()
-                        print(f"Filosofo {self.id} (par) terminou de comer. Soltando garfos.")
             else: 
-                print(f"Filosofo {self.id} (impar) tentando pegar garfo DIREITO.")
-                with self.right_fork: # Usando 'with'
-                    print(f"Filosofo {self.id} (impar) pegou garfo DIREITO. Tentando pegar garfo ESQUERDO.")
-                    with self.left_fork: # Usando 'with'
-                        print(f"Filosofo {self.id} (impar) pegou garfo ESQUERDO.")
+                with self.right_fork: 
+                    with self.left_fork:
                         self.eat()
-                        print(f"Filosofo {self.id} (impar) terminou de comer. Soltando garfos.")
 
     def stop(self):
         self._running = False
 
-def run_deadlock_threads():
+def save_to_csv(filename, strategy, elapsed_time, eating_counts):
+    
+    # Se o arquivo não existe, escreve o cabeçalho
+    try:
+        with open(filename, 'r') as f:
+            first_row = next(csv.reader(f))
+            if first_row[0] != 'Estrategia':
+                raise FileNotFoundError
+    except (FileNotFoundError, StopIteration):
+        with open(filename, 'w', newline='') as f:
+            writer = csv.writer(f)
+            header = ['Estrategia', 'Tempo_Total_s'] + [f'Filosofo_{i}_Refeicoes' for i in range(NUM_PHILOSOPHERS)]
+            writer.writerow(header)
+
+    # Escreve a linha de dados
+    with open(filename, 'a', newline='') as f:
+        writer = csv.writer(f)
+        row = [strategy, f'{elapsed_time:.4f}'] + eating_counts
+        writer.writerow(row)
+
+def run_simulation(strategy, timeout_s):
     forks = [threading.Lock() for _ in range(NUM_PHILOSOPHERS)]
+    semaphore = threading.Semaphore(NUM_PHILOSOPHERS - 1) if strategy == 'corrected' else None
+    
     philosophers = [
-        Philosopher(i, forks[i], forks[(i + 1) % NUM_PHILOSOPHERS], strategy='deadlock')
+        Philosopher(i, forks[i], forks[(i + 1) % NUM_PHILOSOPHERS], strategy=strategy, semaphore=semaphore)
         for i in range(NUM_PHILOSOPHERS)
     ]
 
+    start_time = time.time()
     for p in philosophers:
         p.start()
 
-    time.sleep(5) # Rodar por 5 segundos para observar o deadlock
+    time.sleep(timeout_s) # Roda pelo tempo limite
+
+    # Tenta parar as threads
     for p in philosophers:
         p.stop()
-        p.join(timeout=1) # Tenta parar as threads
-
-def run_corrected_threads():
-    forks = [threading.Lock() for _ in range(NUM_PHILOSOPHERS)]
-    # Solução N-1: Permite que no máximo N-1 filosofos tentem pegar garfos ao mesmo tempo
-    semaphore = threading.Semaphore(NUM_PHILOSOPHERS - 1)
-
-    philosophers = [
-        Philosopher(i, forks[i], forks[(i + 1) % NUM_PHILOSOPHERS], strategy='corrected', semaphore=semaphore)
-        for i in range(NUM_PHILOSOPHERS)
-    ]
-
+    
+    # Faz join nas threads, mas a thread em deadlock pode não parar
     for p in philosophers:
-        p.start()
+        p.join(timeout=1) 
 
-    time.sleep(10) # Rodar por 10 segundos
-    for p in philosophers:
-        p.stop()
-        p.join(timeout=1) # Tenta parar as threads
+    end_time = time.time()
+
+    elapsed_time = end_time - start_time
+    eating_counts = [p.eating_count for p in philosophers]
+    
+    return elapsed_time, eating_counts
+
+def main_all(timeout_deadlock=5, timeout_corrected=10):
+    # Garante que o diretório de resultados exista
+    os.makedirs('results', exist_ok=True)
+    filename = 'results/threads_metrics.csv'
+
+    print(f"\n--- Executando Deadlock (Timeout: {timeout_deadlock}s) ---")
+    elapsed_time, eating_counts = run_simulation('deadlock', timeout_deadlock)
+    print(f"Tempo: {elapsed_time:.4f}s. Refeições (Total: {sum(eating_counts)}): {eating_counts}")
+    save_to_csv(filename, 'deadlock', elapsed_time, eating_counts)
+    
+    print(f"\n--- Executando Corrigida (Timeout: {timeout_corrected}s) ---")
+    elapsed_time, eating_counts = run_simulation('corrected', timeout_corrected)
+    print(f"Tempo: {elapsed_time:.4f}s. Refeições (Total: {sum(eating_counts)}): {eating_counts}")
+    save_to_csv(filename, 'corrected', elapsed_time, eating_counts)
+
+    print(f"\n--- Fim da Simulação de Threads. Dados salvos em {filename} ---")
+
 
 if __name__ == "__main__":
-    print("\n--- Executando versão com deadlock (threads) ---")
-    run_deadlock_threads()
-    print("\nDeadlock provavelmente ocorreu ou a simulação atingiu o tempo limite.")
-
-    print("\n--- Executando versão corrigida (threads) ---")
-    run_corrected_threads()
-
-    print("\n--- Fim da simulação de threads ---")
+    main_all()
