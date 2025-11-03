@@ -1,14 +1,21 @@
-# 🍽️ Análise Comparativa do Problema dos Filósofos Jantando: Corrotinas vs. Threads
+# 💡 O Problema dos Filósofos Jantando
+
+O problema, proposto por Edsger Dijkstra, ilustra os desafios de evitar deadlock e starvation em um sistema com recursos compartilhados.
+
+Cinco filósofos estão sentados em uma mesa redonda, alternando entre pensar e comer. Para comer, cada filósofo precisa de dois hashis (recursos compartilhados): um à sua esquerda e um à sua direita. Eles pegam um hashi de cada vez. Nesse sentido, cada filósofo alterna entre duas tarefas: comer ou pensar. Quando um filósofo fica com fome, ele tenta pegar os garfos à sua esquerda e à sua direita, um de cada vez, independente da ordem. Caso ele consiga pegar dois garfos, ele come durante um determinado tempo e depois recoloca os garfos na mesa. Em seguida ele volta a pensar.
+
+
+Por definição, o problema em questão é: 
+
+  Você é capaz de propor um algoritmo que implemente cada filósofo de modo que ele execute as tarefas de comer e pensar sem nunca ficar travado?
+
+
+## 🍽️ Análise Comparativa do Problema dos Filósofos Jantando: Corrotinas vs. Threads
 
 Este projeto em Python explora o Problema dos Filósofos Jantando (Dining Philosophers Problem), um problema clássico de concorrência e sincronização em ciência da computação, utilizando e comparando duas abordagens de concorrência em Python: Threads (programação preemptiva) e Corrotinas com asyncio (programação cooperativa).
 
 O objetivo principal é demonstrar a ocorrência de deadlock (impasse) e, em seguida, implementar soluções robustas para preveni-lo em ambos os modelos de concorrência.
 
-## 💡 O Problema dos Filósofos Jantando
-
-O problema, proposto por Edsger Dijkstra, ilustra os desafios de evitar deadlock e starvation em um sistema com recursos compartilhados.
-
-Cinco filósofos estão sentados em uma mesa redonda, alternando entre pensar e comer. Para comer, cada filósofo precisa de dois hashis (recursos compartilhados): um à sua esquerda e um à sua direita. Eles pegam um hashi de cada vez.
 
 ## 🚀 Como Executar
 
