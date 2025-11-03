@@ -66,7 +66,7 @@ A principal diferença reside no modelo de concorrência e como o controle da ex
 
 Ambas as abordagens são suscetíveis a deadlock se a lógica de acesso a recursos for falha, e ambas requerem as mesmas estratégias de prevenção para garantir a segurança do recurso.
 
-### Mais informações e detalhes estão presentes no relatório do projeto [report.pdf](./threads.py)
+### Mais informações e detalhes estão presentes no relatório do projeto [report.pdf](./report.pdf)
 
 ###### Referências 
 - [The Little Book of Semaphores](https://greenteapress.com/semaphores/LittleBookOfSemaphores.pdf)
