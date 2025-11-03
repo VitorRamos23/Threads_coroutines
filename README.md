@@ -61,18 +61,18 @@ Ambas as abordagens são suscetíveis a deadlock se a lógica de acesso a recurs
 
 O projeto requer apenas o Python 3.x.
 
-1. Threads (dining_philosophers_threads.py)
+1. Threads (threads.py)
 
 Este arquivo executa uma simulação de 5 segundos da versão com deadlock e, em seguida, uma simulação de 10 segundos da versão corrigida
 
-```python3 dining_philosophers_threads.py```
+```python3 threads.py```
 
 
-2. Corrotinas (dining_philosophers_coroutines.py)
+2. Corrotinas (coroutines.py)
 
 Este arquivo executa uma simulação de 5 segundos da versão com deadlock e, em seguida, uma simulação de 10 segundos da versão corrigida.
 
-```python3 dining_philosophers_coroutines.py```
+```python3 coroutines.py```
 
 ###### Referências 
 - [The Little Book of Semaphores](https://greenteapress.com/semaphores/LittleBookOfSemaphores.pdf)
