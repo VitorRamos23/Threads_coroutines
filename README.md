@@ -68,5 +68,7 @@ Ambas as abordagens são suscetíveis a deadlock se a lógica de acesso a recurs
 
 ### Mais informações e detalhes estão presentes no relatório do projeto [report.pdf](./report.pdf)
 
-###### Referências 
+### Referências 
 - [The Little Book of Semaphores](https://greenteapress.com/semaphores/LittleBookOfSemaphores.pdf)
+- [DEVIANTE](https://www.deviante.com.br/noticias/entre-forks-e-segredos/)
+- Video no [Youtube](https://www.youtube.com/watch?v=G0ZCndqb0xk) do Luís Paulo Bravin
