@@ -72,3 +72,4 @@ Ambas as abordagens são suscetíveis a deadlock se a lógica de acesso a recurs
 - [The Little Book of Semaphores](https://greenteapress.com/semaphores/LittleBookOfSemaphores.pdf)
 - [DEVIANTE](https://www.deviante.com.br/noticias/entre-forks-e-segredos/)
 - Video no [Youtube](https://www.youtube.com/watch?v=G0ZCndqb0xk) do Luís Paulo Bravin
+- [wikipedia](https://en.wikipedia.org/wiki/Dining_philosophers_problem)
